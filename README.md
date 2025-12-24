@@ -1,44 +1,16 @@
-# 🚀 YLES Event Management Portal
+# React + Vite
 
-A full-stack, real-time event management platform designed for the Young Leaders Entrepreneurial Summit (YLES). This application provides a complete solution for managing delegate registration, event progress, and security deposit/fine tracking, with separate, secure portals for both delegates and administrators.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Built with a modern, glass-morphism dark theme inspired by the "Investomania" project.
+Currently, two official plugins are available:
 
-## 🎯 Features
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-- **Role-Based Authentication**: Secure login system distinguishing between "Admin" and "Delegate" users.
-- **Admin Panel**: A comprehensive dashboard for event staff to:
-    - Manage progress for all 300 teams (pass, fail, reset).
-    - Manage module schedules (create, update, delete modules).
-    - Issue and remove individual fines.
-    - Wipe all fines for a specific team.
-- **Delegate Dashboard**: A personalized portal for teams to:
-    - View their real-time progress through event modules.
-    - Track their security deposit balance.
-    - See a detailed history of all fines.
-- **Info Hub**: A central page for delegates to view event schedules, module times, venues, and map links.
-- **Real-time Database**: Built on Supabase, all updates from the admin panel are (or can be) reflected live on the delegate's dashboard.
-- **Modern UI**: Dark-themed, responsive, glass-morphism interface.
+## React Compiler
 
-## 🛠 Tech Stack
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-### Frontend
-- **React 18** (with Hooks)
-- **Vite**
-- **React Router 6** (for routing)
-- **CSS3** (custom styling for glass morphism)
-- **react-responsive-modal**
+## Expanding the ESLint configuration
 
-### Backend
-- **Supabase**
-    - **PostgreSQL**: The core database.
-    - **Supabase Auth**: For user management and Row Level Security (RLS).
-    - **SQL Functions & Triggers**: For automatic balance calculation and user profile creation.
-    - **Real-time**: Supabase's real-time capabilities.
-
-## 🚀 Quick Start & Setup
-
-### 1. Clone the Repository
-```bash
-git clone [https://github.com/YOUR-USERNAME/yles-app.git](https://github.com/YOUR-USERNAME/yles-app.git)
-cd yles-app
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
