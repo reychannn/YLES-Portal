@@ -1,16 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 // --- START CONFIGURATION ---
 
 // !! USE YOUR SERVICE ROLE KEY, NOT THE ANON KEY !!
-// Find this in your Supabase Project: Settings > API > Project Secrets
 const SUPABASE_URL = "https://sfrabtflrzvnrcxgnklm.supabase.co";
-const SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmcmFidGZscnp2bnJjeGdua2xtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjUxMzU4NSwiZXhwIjoyMDc4MDg5NTg1fQ.MTgsGt4c7Wvh9RXMO7JPOU6XERTZ0Xs1MKlhQn0W7nQ"; // <-- IMPORTANT!
+//
+const SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmcmFidGZscnp2bnJjeGdua2xtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjUxMzU4NSwiZXhwIjoyMDc4MDg5NTg1fQ.MTgsGt4c7Wvh9RXMO7JPOU6XERTZ0Xs1MKlhQn0W7nQ"; 
 
 // --- END CONFIGURATION ---
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Create the "Admin" client
 const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_KEY, {
@@ -20,31 +23,39 @@ const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_KEY, {
   }
 });
 
-// Load the JSON file
-const usersFilePath = path.join(path.resolve(), 'scripts', 'users.json');
-const usersData = JSON.parse(fs.readFileSync(usersFilePath, 'utf8'));
-const users = usersData.users;
+// 1. CHANGE FILE PATH: Read 'special_users.json' instead of 'users.json'
+const usersFilePath = path.join(__dirname, 'special_users.json');
 
 async function createUsers() {
-  console.log(`Starting to import ${users.length} users...`);
+  try {
+    const fileContent = fs.readFileSync(usersFilePath, 'utf8');
+    
+    // 2. CHANGE DATA STRUCTURE: The new file is a direct array, not { users: [...] }
+    const users = JSON.parse(fileContent);
 
-  for (const user of users) {
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email: user.email,
-      password: user.password,
-      // We use user_metadata to pass the 'team_name' to our trigger
-      user_metadata: { team_name: user.username }, 
-      email_confirm: true // We're admin, so we can just mark it as confirmed
-    });
+    console.log(`Starting to import ${users.length} special users...`);
 
-    if (error) {
-      console.error(`Error creating user ${user.email}:`, error.message);
-    } else {
-      console.log(`Successfully created user: ${user.email}`);
+    for (const user of users) {
+      const { data, error } = await supabaseAdmin.auth.admin.createUser({
+        email: user.email,
+        password: user.password,
+        // 3. PASS METADATA: Pass the 'data' object (contains team_name AND role)
+        user_metadata: user.data, 
+        email_confirm: true 
+      });
+
+      if (error) {
+        console.error(`Error creating user ${user.email}:`, error.message);
+      } else {
+        console.log(`Successfully created: ${user.email} (Role: ${user.data.role})`);
+      }
     }
-  }
 
-  console.log('User import complete.');
+    console.log('User import complete.');
+    
+  } catch (err) {
+    console.error("Error reading file or importing:", err);
+  }
 }
 
 createUsers();

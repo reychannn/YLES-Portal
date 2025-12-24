@@ -1,37 +1,56 @@
 // src/pages/admin/AdminModules.jsx
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { Navigate } from 'react-router-dom'; // Import Navigate
+import { useAuth } from '../../context/AuthContext'; // Import useAuth
 import 'react-responsive-modal/styles.css';
 import { Modal } from 'react-responsive-modal';
 
-// ... (defaultModuleState is identical, no changes)
-// ...
 const defaultModuleState = { id: null, name: '', day: 1, start_time: '', venue: '', venue_map_url: '', description: '' };
 
 function AdminModules() {
+  const { profile } = useAuth(); // Get profile
+  
+  // --- STATE ---
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentModule, setCurrentModule] = useState(defaultModuleState);
 
-  // ... (All logic: fetchModules, open/close modals, handleSubmit, etc. is identical, no changes)
-  // ...
+  // --- ACCESS CONTROL ---
+  // If the profile is loaded but they are NOT 'admin' or 'events', kick them out.
+  // We use profile?.role to check. If profile is null (still loading), we wait.
+  // Note: 'loading' here is local component state, not auth loading. 
+  // Ideally, useAuth should provide an 'authLoading' state to prevent premature redirects,
+  // but assuming the parent route handles auth loading, we check role here.
+  if (profile && !['admin', 'events'].includes(profile.role)) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  // --- Data Fetching ---
   const fetchModules = async () => {
     setLoading(true);
     const { data, error } = await supabase.from('modules').select('*').order('day', { ascending: true }).order('start_time', { ascending: true });
     if (error) { setError(error.message); } else { setModules(data); }
     setLoading(false);
   };
+
   useEffect(() => { fetchModules(); }, []);
+
+  // --- Handlers ---
   const openCreateModal = () => { setCurrentModule(defaultModuleState); setIsModalOpen(true); };
+  
   const openEditModal = (module) => {
     const formattedTime = module.start_time ? new Date(new Date(module.start_time).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '';
     setCurrentModule({ ...module, start_time: formattedTime });
     setIsModalOpen(true);
   };
+  
   const closeModal = () => { setIsModalOpen(false); };
+  
   const handleChange = (e) => { const { name, value } = e.target; setCurrentModule(prev => ({ ...prev, [name]: value })); };
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     const moduleToSubmit = { ...currentModule, start_time: currentModule.start_time ? new Date(currentModule.start_time).toISOString() : null };
@@ -45,6 +64,7 @@ function AdminModules() {
     }
     closeModal(); fetchModules();
   };
+  
   const handleDelete = async (moduleId) => {
     if (window.confirm('Are you sure you want to delete this module?')) {
       const { error } = await supabase.from('modules').delete().eq('id', moduleId);
@@ -91,7 +111,7 @@ function AdminModules() {
         </tbody>
       </table>
 
-      {/* Modal form: Use form-group and form-input classes */}
+      {/* Modal form */}
       <Modal open={isModalOpen} onClose={closeModal} center>
         <form onSubmit={handleSubmit} style={{ width: '500px' }}>
           <h2>{currentModule.id ? 'Edit Module' : 'Create New Module'}</h2>

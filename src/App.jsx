@@ -1,12 +1,12 @@
 // src/App.jsx
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
+import { useAuth } from './context/AuthContext'; //
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import InfoHub from './pages/InfoHub';
 
 // Import Layouts
-import DelegateLayout from './components/common/DelegateLayout'; // <-- NEW
+import DelegateLayout from './components/common/DelegateLayout';
 import AdminLayout from './components/common/AdminLayout';
 
 // Import Admin components
@@ -26,6 +26,9 @@ function App() {
     );
   }
 
+  // Define who gets sent to the Admin Dashboard
+  const adminRoles = ['admin', 'fnr', 'dc', 'events'];
+
   return (
     <Routes>
       {/* === Public Route === */}
@@ -35,15 +38,17 @@ function App() {
       />
       
       {/* === Delegate Routes === */}
-      {/* All delegate routes are children of this parent route. */}
+      {/* This logic acts as the "Traffic Cop" */}
       <Route
         element={
           !session ? (
             <Navigate to="/login" replace />
-          ) : profile && profile.role === 'admin' ? (
+          ) : profile && adminRoles.includes(profile.role) ? ( 
+            // ^ FIX: Check if role is ANY of the admin types
             <Navigate to="/admin" replace />
           ) : (
-            <DelegateLayout /> // <-- USE NEW LAYOUT
+            // If strictly a delegate, show Delegate Layout
+            <DelegateLayout /> 
           )
         }
       >
