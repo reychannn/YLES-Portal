@@ -20,13 +20,8 @@ function Login() {
         password: password,
       });
 
-      if (error) {
-        throw error;
-      }
-      
-      // The auth listener in AuthContext will do the rest
+      if (error) throw error;
       console.log('Login successful!');
-
     } catch (error) {
       setError('Invalid username or password.');
     } finally {
@@ -35,44 +30,50 @@ function Login() {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-form-card">
-        <h2>YLES Login</h2>
-        <p>Sign in with your assigned team credentials</p>
+    <div className="flex justify-center items-center w-full min-h-screen bg-gradient-to-br from-[#1a0e14] via-[#121212] to-[#2d1b69]">
+      <div className="w-full max-w-md p-8 rounded-2xl bg-surface/60 backdrop-blur-xl border border-white/10 shadow-2xl">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-white mb-2">YLES Login</h2>
+          <p className="text-text-secondary">Sign in with your assigned team credentials</p>
+        </div>
         
-        <form onSubmit={handleLogin}>
-          <div className="form-group">
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
             <input
               id="username"
               type="text"
               placeholder="Team Username (e.g., YLES-001)"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="form-input"
+              className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
               disabled={loading}
               required
             />
           </div>
 
-          <div className="form-group">
+          <div>
             <input
               id="password"
               type="password"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="form-input"
+              className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
               disabled={loading}
               required
             />
           </div>
 
-          <button type="submit" disabled={loading} className="btn-primary">
+          <button 
+            type="submit" 
+            disabled={loading} 
+            className="w-full py-3.5 mt-4 rounded-lg font-bold text-white bg-gradient-to-r from-[#e52e71] to-[#ff8a00] hover:-translate-y-0.5 transform transition-all shadow-lg hover:shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
 
           {error && (
-            <div className="error-message">
+            <div className="p-3 text-sm text-center text-red-200 bg-red-900/30 border border-red-500/30 rounded-lg">
               {error}
             </div>
           )}

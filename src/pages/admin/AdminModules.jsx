@@ -1,36 +1,38 @@
-// src/pages/admin/AdminModules.jsx
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { Navigate } from 'react-router-dom'; // Import Navigate
-import { useAuth } from '../../context/AuthContext'; // Import useAuth
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import 'react-responsive-modal/styles.css';
 import { Modal } from 'react-responsive-modal';
 
-const defaultModuleState = { id: null, name: '', day: 1, start_time: '', venue: '', venue_map_url: '', description: '' };
+// Updated state to include new fields
+const defaultModuleState = { 
+  id: null, 
+  name: '', 
+  day: 1, 
+  start_time: '', 
+  venue: '', 
+  venue_map_url: '', 
+  description: '',      // This is now "Case Study"
+  round_guidelines: '', // New Field
+  note: ''              // New Field
+};
 
 function AdminModules() {
-  const { profile } = useAuth(); // Get profile
-  
-  // --- STATE ---
+  const { profile } = useAuth();
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentModule, setCurrentModule] = useState(defaultModuleState);
 
-  // --- ACCESS CONTROL ---
-  // If the profile is loaded but they are NOT 'admin' or 'events', kick them out.
-  // We use profile?.role to check. If profile is null (still loading), we wait.
-  // Note: 'loading' here is local component state, not auth loading. 
-  // Ideally, useAuth should provide an 'authLoading' state to prevent premature redirects,
-  // but assuming the parent route handles auth loading, we check role here.
   if (profile && !['admin', 'events'].includes(profile.role)) {
     return <Navigate to="/admin" replace />;
   }
 
-  // --- Data Fetching ---
   const fetchModules = async () => {
     setLoading(true);
+    // Fetch all columns
     const { data, error } = await supabase.from('modules').select('*').order('day', { ascending: true }).order('start_time', { ascending: true });
     if (error) { setError(error.message); } else { setModules(data); }
     setLoading(false);
@@ -38,22 +40,29 @@ function AdminModules() {
 
   useEffect(() => { fetchModules(); }, []);
 
-  // --- Handlers ---
   const openCreateModal = () => { setCurrentModule(defaultModuleState); setIsModalOpen(true); };
   
   const openEditModal = (module) => {
     const formattedTime = module.start_time ? new Date(new Date(module.start_time).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '';
-    setCurrentModule({ ...module, start_time: formattedTime });
+    // Ensure new fields are not undefined to avoid uncontrolled input warnings
+    setCurrentModule({ 
+      ...module, 
+      start_time: formattedTime,
+      round_guidelines: module.round_guidelines || '',
+      note: module.note || ''
+    });
     setIsModalOpen(true);
   };
   
   const closeModal = () => { setIsModalOpen(false); };
-  
   const handleChange = (e) => { const { name, value } = e.target; setCurrentModule(prev => ({ ...prev, [name]: value })); };
   
   const handleSubmit = async (e) => {
     e.preventDefault();
     const moduleToSubmit = { ...currentModule, start_time: currentModule.start_time ? new Date(currentModule.start_time).toISOString() : null };
+    
+    // Remove null values for new fields if they are empty strings? No, Supabase handles empty strings fine.
+    
     if (currentModule.id) {
       const { error } = await supabase.from('modules').update(moduleToSubmit).eq('id', currentModule.id);
       if (error) setError(error.message);
@@ -72,84 +81,125 @@ function AdminModules() {
     }
   };
 
-  if (loading) return <div>Loading modules...</div>;
+  if (loading) return <div className="p-8 text-text-secondary">Loading modules...</div>;
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Manage Modules</h1>
-        <button onClick={openCreateModal} className="btn-primary" style={{ background: '#28a745' }}>
+    <div className="animate-fade-in">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-white">Manage Modules</h1>
+        <button onClick={openCreateModal} className="px-4 py-2 bg-success text-white rounded-lg font-semibold hover:bg-green-600 transition-colors shadow-lg">
           + Create New Module
         </button>
       </div>
       
-      {error && <div className="error-message">Error: {error}</div>}
+      {error && <div className="p-4 mb-6 bg-error/20 border border-error text-red-200 rounded-lg">Error: {error}</div>}
 
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Day</th>
-            <th>Time</th>
-            <th>Venue</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {modules.map(module => (
-            <tr key={module.id}>
-              <td>{module.name}</td>
-              <td>{module.day}</td>
-              <td>{module.start_time ? new Date(module.start_time).toLocaleString() : 'TBD'}</td>
-              <td>{module.venue}</td>
-              <td>
-                <button onClick={() => openEditModal(module)} className="btn-secondary" style={{ padding: '5px 10px', marginRight: '5px' }}>Edit</button>
-                <button onClick={() => handleDelete(module.id)} className="btn-secondary" style={{ padding: '5px 10px' }}>Delete</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="bg-surface rounded-xl border border-white/10 overflow-hidden shadow-lg">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-white/5 border-b border-white/10 text-xs uppercase text-text-secondary font-semibold">
+              <tr>
+                <th className="px-6 py-4">Name</th>
+                <th className="px-6 py-4">Day</th>
+                <th className="px-6 py-4">Time</th>
+                <th className="px-6 py-4">Venue</th>
+                <th className="px-6 py-4 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {modules.map(module => (
+                <tr key={module.id} className="hover:bg-white/5 transition-colors duration-150">
+                  <td className="px-6 py-4 font-medium text-white">{module.name}</td>
+                  <td className="px-6 py-4 text-text-secondary">{module.day}</td>
+                  <td className="px-6 py-4 text-text-secondary">{module.start_time ? new Date(module.start_time).toLocaleString() : 'TBD'}</td>
+                  <td className="px-6 py-4 text-text-secondary">{module.venue}</td>
+                  <td className="px-6 py-4 text-center">
+                    <button onClick={() => openEditModal(module)} className="text-blue-400 hover:text-blue-300 mr-4 transition-colors">Edit</button>
+                    <button onClick={() => handleDelete(module.id)} className="text-error hover:text-red-400 transition-colors">Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-      {/* Modal form */}
-      <Modal open={isModalOpen} onClose={closeModal} center>
-        <form onSubmit={handleSubmit} style={{ width: '500px' }}>
-          <h2>{currentModule.id ? 'Edit Module' : 'Create New Module'}</h2>
-          
-          <div className="form-group">
-            <label>Module Name:</label>
-            <input type="text" name="name" value={currentModule.name} onChange={handleChange} required className="form-input" />
-          </div>
-          
-          <div className="form-group">
-            <label>Day:</label>
-            <input type="number" name="day" min="1" max="3" value={currentModule.day} onChange={handleChange} required className="form-input" />
-          </div>
+      <Modal 
+        open={isModalOpen} 
+        onClose={closeModal} 
+        center
+        classNames={{ modal: 'bg-surface rounded-xl border border-white/10 shadow-2xl p-0', closeButton: 'fill-white' }}
+        styles={{ modal: { backgroundColor: '#1e1e1e', borderRadius: '1rem', padding: 0 } }}
+      >
+        <div className="p-8 w-[600px] max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <h2 className="text-2xl font-bold text-white mb-6">{currentModule.id ? 'Edit Module' : 'Create New Module'}</h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            
+            {/* Standard Fields */}
+            <div className="space-y-1">
+              <label className="text-sm text-text-secondary">Module Name</label>
+              <input type="text" name="name" value={currentModule.name} onChange={handleChange} required className="w-full p-3 bg-background border border-white/10 rounded-lg text-white focus:border-primary focus:outline-none" />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-sm text-text-secondary">Day</label>
+                <input type="number" name="day" min="1" max="3" value={currentModule.day} onChange={handleChange} required className="w-full p-3 bg-background border border-white/10 rounded-lg text-white focus:border-primary focus:outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-text-secondary">Start Time</label>
+                <input type="datetime-local" name="start_time" value={currentModule.start_time} onChange={handleChange} className="w-full p-3 bg-background border border-white/10 rounded-lg text-white focus:border-primary focus:outline-none" />
+              </div>
+            </div>
 
-          <div className="form-group">
-            <label>Start Time:</label>
-            <input type="datetime-local" name="start_time" value={currentModule.start_time} onChange={handleChange} className="form-input" />
-          </div>
+            <div className="space-y-1">
+              <label className="text-sm text-text-secondary">Venue</label>
+              <input type="text" name="venue" value={currentModule.venue} onChange={handleChange} className="w-full p-3 bg-background border border-white/10 rounded-lg text-white focus:border-primary focus:outline-none" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm text-text-secondary">Venue Map URL</label>
+              <input type="text" name="venue_map_url" value={currentModule.venue_map_url} onChange={handleChange} className="w-full p-3 bg-background border border-white/10 rounded-lg text-white focus:border-primary focus:outline-none" />
+            </div>
 
-          <div className="form-group">
-            <label>Venue:</label>
-            <input type="text" name="venue" value={currentModule.venue} onChange={handleChange} className="form-input" />
-          </div>
+            {/* --- NEW FIELDS --- */}
 
-          <div className="form-group">
-            <label>Venue Map URL:</label>
-            <input type="text" name="venue_map_url" value={currentModule.venue_map_url} onChange={handleChange} className="form-input" />
-          </div>
+            <div className="space-y-1">
+              <label className="text-sm text-text-secondary">Round Guidelines (Google Form links etc.)</label>
+              <textarea 
+                name="round_guidelines" 
+                value={currentModule.round_guidelines} 
+                onChange={handleChange} 
+                placeholder="Paste links and guidelines here..."
+                className="w-full p-3 bg-background border border-white/10 rounded-lg text-white focus:border-primary focus:outline-none h-24" 
+              />
+            </div>
 
-          <div className="form-group">
-            <label>Description:</label>
-            <textarea name="description" value={currentModule.description} onChange={handleChange} className="form-input" style={{ height: '80px' }} />
-          </div>
+            <div className="space-y-1">
+              <label className="text-sm text-text-secondary">Case Study (Previously Description)</label>
+              <textarea 
+                name="description" 
+                value={currentModule.description} 
+                onChange={handleChange} 
+                className="w-full p-3 bg-background border border-white/10 rounded-lg text-white focus:border-primary focus:outline-none h-24" 
+              />
+            </div>
 
-          <button type="submit" className="btn-primary">
-            {currentModule.id ? 'Save Changes' : 'Create Module'}
-          </button>
-        </form>
+            <div className="space-y-1">
+              <label className="text-sm text-text-secondary">Note</label>
+              <textarea 
+                name="note" 
+                value={currentModule.note} 
+                onChange={handleChange} 
+                placeholder="Important additional info..."
+                className="w-full p-3 bg-background border border-white/10 rounded-lg text-white focus:border-primary focus:outline-none h-16" 
+              />
+            </div>
+
+            <button type="submit" className="w-full py-3 mt-4 bg-primary text-white font-bold rounded-lg hover:bg-red-600 transition-colors shadow-lg">
+              {currentModule.id ? 'Save Changes' : 'Create Module'}
+            </button>
+          </form>
+        </div>
       </Modal>
     </div>
   );
